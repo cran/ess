@@ -5,10 +5,10 @@
 \title{Download integrated rounds separately for countries from the European Social Survey}
 \usage{
 ess_country(country, rounds, your_email, only_download = FALSE,
-  output_dir = NULL)
+  output_dir = getwd(), format = "stata")
 }
 \arguments{
-\item{country}{A character of length 1 with the full name of the country. 
+\item{country}{a character of length 1 with the full name of the country. 
 Use \code{\link{show_countries}} for a list of available countries.}
 
 \item{rounds}{a numeric vector with the rounds to download. See \code{\link{show_rounds}}
@@ -21,18 +21,31 @@ If you haven't registered in the ESS website, create an account at
 \item{only_download}{whether to only download the files as Stata files. Defaults to FALSE.}
 
 \item{output_dir}{a character vector with the output directory in case you want to only
-download the files using the \code{only_download} argument. Defaults to NULL because data
-is not saved by default. Files will be saved as ESS_*/ESS\code{N} where the first star is the
-country name and \code{N} the round number.}
+download the files using the \code{only_download} argument. Defaults to your working directory.
+Files will be saved as ESS_*/ESS\code{N} where the first star is the country name and \code{N}
+the round number. This will be interpreted as a \strong{directory} and not a file name. Files names
+will be used as folder names, such as "./myfile.dta/.}
+
+\item{format}{the format from which to download the data. Can either be 'stata', 'spss' or 'sas',
+with 'stata' as default. When \code{only_download} is set to TRUE, the data will be downloaded in
+the \code{format} specified. If \code{only_download} is FALSE, the data is downloaded and read
+from the specified \code{format} (only 'spss' and 'stata' supported, see details).}
 }
 \value{
-if \code{only_download} is set to FALSE it returns a list of \code{length(rounds)}
-containing the latest version of each round for the selected country. If \code{only_download}
-is set to TRUE and \code{output_dir} is a valid directory, it returns the saved directories
-invisibly and saves all the rounds in .dta format in \code{output_dir}
+if \code{only_download} is set to FALSE and \code{length(rounds)} is 1, it returns a tibble
+with the latest version of that round. Otherwise it returns a list of \code{length(rounds)}
+containing the latest version of each round. If \code{only_download} is set to TRUE and
+output_dir is a valid directory, it returns the saved directories invisibly and saves all
+the rounds in the chosen \code{format} in \code{output_dir}
 }
 \description{
 Download integrated rounds separately for countries from the European Social Survey
+}
+\details{
+If \code{only_download} is set to FALSE, the data will be read in the format specified
+in \code{format}. 'sas' is not supported because the data formats have changed between
+ESS waves and separate formats require different functions to be read. To preserve parsimony
+and format errors between waves, the user should use 'spss' or 'stata'.
 }
 \examples{
 \dontrun{
@@ -45,12 +58,16 @@ dk_three <- ess_country("Denmark", 1:3, "your_email@email.com")
 temp_dir <- tempdir()
 
 ess_country(
- "Turkey"
+ "Turkey",
  rounds = c(2, 4),
  your_email = "your_email@email.com",
  only_download = TRUE,
  output_dir = temp_dir
 )
+
+# By default, ess_country downloads 'stata' files but
+# you can also download 'spss' or 'sas' files.
+
 
 # If email is not registered at ESS website, error will arise
 uk_one <- ess_country("United Kingdom", 5, "wrong_email@email.com")

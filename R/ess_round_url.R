@@ -1,4 +1,10 @@
-ess_round_url <- function(rounds) {
+ess_round_url <- function(rounds, format) {
+  
+  # Check if the format is either 'stata', 'spss' or 'sas'.
+  
+  if(!format %in% c('stata', 'spss', 'sas')) {
+    stop("Format not available. Only 'stata', 'spss', or 'sas'")
+  }
   
   # Get unique rounds to avoid repeting rounds
   rounds <- sort(unique(rounds))
@@ -20,41 +26,34 @@ ess_round_url <- function(rounds) {
   round_codes <- paste0("ESS", rounds)
   
   # Extract download urls from selected_rounds
-  round_links <- sort(grep(paste0(round_codes, collapse = "|"),
-                           grab_rounds_link(), value = TRUE))
+  round_links <- sort(grep(pattern = paste0(round_codes, collapse = "|"),
+                           x = grab_rounds_link(.global_vars$ess_website),
+                           value = TRUE))
   
   # empty character to fill with urls
-  stata.files <- character(length(rounds))
+  format.files <- character(length(rounds))
 
   for (index in seq_along(round_links)) {
-    download.page <- httr::GET(paste0(.global_vars$ess_website, 
+    download_page <- safe_GET(paste0(.global_vars$ess_website, 
                                       round_links[index]))
-    download.block <- XML::htmlParse(download.page, asText = TRUE)
-    z <- XML::xpathSApply(download.block, "//a", function(u) XML::xmlAttrs(u)["href"])
-    stata.files[index] <- z[grep("stata", z)]
+    html_ess <- xml2::read_html(download_page) 
+    z <- xml2::xml_text(xml2::xml_find_all(html_ess, "//a/@href"))
+    format.files[index] <- z[grep(format, z)]
   }
   # } # this bracket closes the loop commented aout from above
   
-  full_urls <- sort(paste0(.global_vars$ess_website, stata.files))
+  full_urls <- sort(paste0(.global_vars$ess_website, format.files))
   
   full_urls
 }
 
 # This will return a link like "/download.html?file=ESS8e01&y=2016"
 # for every round available in the ess website.
-grab_rounds_link <- function(ess_website = .global_vars$ess_website) {
-  download_page <- httr::GET(paste0(ess_website, "/data/download.html?r="))
-  download_block <- XML::htmlParse(download_page, asText = TRUE)
-  z <- XML::xpathSApply(download_block, "//a", function(u) XML::xmlAttrs(u)["href"])
+grab_rounds_link <- function(ess_website) {
+  download_page <- safe_GET(paste0(ess_website, "/data/download.html?r="))
+  html_ess <- xml2::read_html(download_page) 
+  z <- xml2::xml_text(xml2::xml_find_all(html_ess, "//a/@href"))
   
   downloads <- unique(grep("^/download.html(.*)[0-9]{4, }$", z, value = TRUE))
   downloads
 }
-
-
-# Here I define an environment to hold the ess_website vector
-# because it's a variable I'll use in nearly all functions to
-# access the website
-.global_vars <- new.env()
-assign("ess_website",
-       "http://www.europeansocialsurvey.org", envir = .global_vars)

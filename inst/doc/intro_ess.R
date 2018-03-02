@@ -6,14 +6,12 @@ knitr::opts_chunk$set(
 )
 
 ## ------------------------------------------------------------------------
-#  if (!require(devtools)) install.packages("devtools")
+#  install.packages("devtools")
 #  devtools::install_github("cimentadaj/ess")
 #  
 #  library(ess)
 
-## ----echo = FALSE--------------------------------------------------------
-#  # To install the stable version use:
-#  
+## ------------------------------------------------------------------------
 #  install.packages("ess")
 
 ## ---- echo = FALSE, eval = TRUE------------------------------------------
@@ -51,4 +49,27 @@ show_rounds()
 #              "your_email@random.com",
 #              only_download = TRUE,
 #              output_dir = "./myfolder/")
+
+## ------------------------------------------------------------------------
+#  ess_country("Turkey", 2,
+#              "your_email@random.com",
+#              only_download = TRUE,
+#              output_dir = "./myfolder/",
+#              format = 'sas')
+
+## ------------------------------------------------------------------------
+#  sp <- ess_country("Spain", 1, your_email)
+#  mean(sp$tvtot)
+#  # 4.622406
+
+## ------------------------------------------------------------------------
+#  new_coding <- recode_missings(sp)
+#  mean(new_coding$tvtot)
+#  # 4.527504
+
+## ------------------------------------------------------------------------
+#  other_newcoding <- recode_missings(sp, c("Don't know", "Refusal"))
+#  table(other_newcoding$tvpol)
+#  #  0   1   2   3   4   5   6   7  66
+#  # 167 460 610 252  95  36  26  31  45
 
