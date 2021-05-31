@@ -6,9 +6,9 @@ msg <- function(k, complete, val, stop_crit) {
   cat(paste(" Edges:", k, "of", complete, "-", stop_crit, "=", round(val, 6L)),"\n")
 }
 
-trivial <- function(x, null, complete) {
+trivial <- function(x, complete) {
   # x: gengraph
-  if (inherits(x, "bwd")) return(null) 
+  if (inherits(x, "bwd")) return(0L) 
   if (inherits(x, "fwd")) return(complete)
 }
 
@@ -27,11 +27,11 @@ update_iteration <- function(x) {
 stop_condition <- function(x) {
   # x: gengraph
   if (inherits(x, "bwd")) {
-    f <- function(stop_val) return(stop_val >= 0L)
+    f <- function(stop_val) return(stop_val >= -.1)
     return(f)
   }
   if (inherits(x, "fwd")) {
-    f <- function(stop_val) return(stop_val <= 0L)
+    f <- function(stop_val) return(stop_val <= .1)
     return(f)
   }  
 }
@@ -71,7 +71,7 @@ adj_lst <- function(x) UseMethod("adj_lst")
 
 #' @rdname adj_lst
 #' @export
-adj_lst.gengraph <- function(x) x$G_adj
+adj_lst.gengraph <- function(x) x$adj_list
 
 #' Adjacency Matrix
 #' @description Extracts the adjacency matrix of a \code{gengraph} object
@@ -82,7 +82,21 @@ adj_mat <- function(x) UseMethod("adj_mat")
 
 #' @rdname adj_mat
 #' @export
-adj_mat.gengraph <- function(x) x$G_A
+adj_mat.gengraph <- function(x) x$adj_matrix
+
+
+#' Gengraph as igraph
+#' @description Convert a \code{gengraph} object to an \code{igraph} object
+#' @param x \code{gengraph} object
+#' @return An \code{igraph} object
+#' @export
+as_igraph <- function(x) UseMethod("as_igraph")
+
+#' @rdname as_igraph
+#' @export
+as_igraph.gengraph <- function(x) igraph::graph_from_adjacency_matrix(x$adj_matrix, "undirected")
+
+
 
 #' Converts an adjacency matrix to an adjacency list
 #'
@@ -126,10 +140,10 @@ as_adj_mat <- function(adj) {
 #' @param ... Not used (for S3 compatability)
 #' @export
 print.gengraph <- function(x, ...) {
-  nv  <- ncol(x$G_A)
-  ne  <- sum(x$G_A)/2
+  nv  <- ncol(x$adj_matrix)
+  ne  <- sum(x$adj_matrix)/2
   cls <- paste0("<", paste0(class(x), collapse = ", "), ">")
-  clique_sizes <- .map_int(x$CG, length)
+  clique_sizes <- .map_int(x$adj_list_cg, length)
   max_C <- max(clique_sizes)
   min_C <- min(clique_sizes)
   avg_C <- mean(clique_sizes)
@@ -137,7 +151,7 @@ print.gengraph <- function(x, ...) {
     "\n -------------------------",
     "\n  Nodes:", nv,
     "\n  Edges:", ne, "/", nv*(nv-1)/2,
-    "\n  Cliques:", length(x$CG),
+    "\n  Cliques:", length(x$adj_list_cg),
     "\n   - max:", max_C,
     "\n   - min:", min_C,
     "\n   - avg:", round(avg_C, 2),
@@ -178,7 +192,7 @@ print.tree <- function(x, ...) print.gengraph(x, ...)
 #' @import igraph
 #' @export
 plot.gengraph <- function(x, vc = NULL,  ...) {
-  G      <- igraph::graph_from_adjacency_matrix(x$G_A, "undirected")
+  G      <- igraph::graph_from_adjacency_matrix(x$adj_matrix, "undirected")
   if (!is.null(vc)) V(G)$color <- vc
   args   <- list(...)
   args$x <- G

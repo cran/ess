@@ -6,7 +6,7 @@
 #' @param thres A threshold mechanism for choosing between two different ways of calculating the entropy. Can Speed up the procedure with the "correct" value.
 #' @details A \code{fwd} object can be created using the \code{gengraph} constructor with \code{type = "fwd"}
 #' @return A \code{fwd} object; a subclass of \code{gengraph}) used for forward selection.
-#' @references \url{https://arxiv.org/abs/1301.2267}, \url{https://doi.org/10.1109/ictai.2004.100}
+#' @references \url{https://arxiv.org/abs/1301.2267}, \doi{10.1109/ictai.2004.100}
 #' @examples
 #'
 #' d <- derma[, 10:25]
@@ -27,24 +27,24 @@ walk.fwd <- function(x, df, q = 0.5, thres = 5) {
   vab   <- unlist(strsplit(x$e, "\\|"))
   va    <- vab[1]
   vb    <- vab[2]
-  Ca    <- x$MSI[[attr(x$e, "idx")]]$C1
-  Cb    <- x$MSI[[attr(x$e, "idx")]]$C2
-  Sab   <- x$MSI[[attr(x$e, "idx")]]$S
+  Ca    <- x$msi[[attr(x$e, "idx")]]$C1
+  Cb    <- x$msi[[attr(x$e, "idx")]]$C2
+  Sab   <- x$msi[[attr(x$e, "idx")]]$S
   Cab   <- c(Sab, va, vb)
 
   # G_prime           <- x
-  G_prime_adj       <- x$G_adj
-  G_prime_A         <- x$G_A
+  G_prime_adj <- x$adj_list
+  G_prime_A   <- x$adj_matrix
 
   # Adding the new edge (va, vb)
   G_prime_adj[[va]] <- c(G_prime_adj[[va]], vb)
   G_prime_adj[[vb]] <- c(G_prime_adj[[vb]], va)
   G_prime_A[va, vb] <- 1L 
   G_prime_A[vb, va] <- 1L
-  CG_prime     <- x$CG    
-  CG_prime_A   <- x$CG_A
-  G_dbl_prime  <- subgraph(Sab, x$G_A) # make_G_dbl_prime(Sab, x$G_A)
-  msi_prime    <- x$MSI
+  CG_prime     <- x$adj_list_cg    
+  CG_prime_A   <- x$adj_matrix_cg
+  G_dbl_prime  <- subgraph(Sab, x$adj_matrix) # make_G_dbl_prime(Sab, xadj_matrix)
+  msi_prime    <- x$msi
         
   ## Vertices connected to a and b in G_dbl_prime
   G_dbl_prime_lst <- as_adj_lst(G_dbl_prime)
@@ -68,12 +68,12 @@ walk.fwd <- function(x, df, q = 0.5, thres = 5) {
   CG_prime_A[matrix(rev(attr(x$e, "ins")), 1)] <- 0L
 
   ## -----------------------------------------------------------------------------
-  ##                  DELETING EDGES FROM CG IN CG_prime
+  ##                  DELETING EDGES FROM adj_list_cg IN CG_prime
   ## -----------------------------------------------------------------------------
   TVL  <- vector("list", 0L) # Temporary Vertex List (see Altmueller)
   # msi corresponds to CG
-  Sabs <- .map_lgl(x$MSI,  function(s) setequal(s$S, Sab))
-  prone_to_deletion <- x$MSI[Sabs]
+  Sabs <- .map_lgl(x$msi,  function(s) setequal(s$S, Sab))
+  prone_to_deletion <- x$msi[Sabs]
   MSab <- .map_lgl(prone_to_deletion, function(z) { # See Altmueller
     es <- names(z$e)
     if (x$e %in% es) {
@@ -164,17 +164,28 @@ walk.fwd <- function(x, df, q = 0.5, thres = 5) {
   ## ---------------------------------------------------------
   ##                CALCULATE NEW ENTROPIES
   ## ---------------------------------------------------------
-  ue        <- update_edges_from_C_primes_to_Cab(df, C_primes, Cab, va, vb, x$MEM, x$LV, q, thres)
+  ue <- update_edges_from_C_primes_to_Cab(
+    df,
+    C_primes,
+    Cab,
+    va,
+    vb,
+    x$mem,
+    x$lvls,
+    q,
+    thres,
+    x$sparse_qic
+  )
   msi_prime <- c(msi_prime, ue$msi)
-  x$MEM     <- ue$mem
+  # x$mem     <- ue$mem # TODO: Reference semantics; so not neccessary
   ## ---------------------------------------------------------
   ##                   RETURN THE GRAPH
   ## ---------------------------------------------------------
-  x$G_adj <- G_prime_adj
-  x$G_A   <- G_prime_A
-  x$CG    <- CG_prime
-  x$CG_A  <- CG_prime_A
-  x$MSI   <- msi_prime
+  x$adj_list      <- G_prime_adj
+  x$adj_matrix    <- G_prime_A
+  x$adj_list_cg   <- CG_prime
+  x$adj_matrix_cg <- CG_prime_A
+  x$msi   <- msi_prime
   if (!neq_empt_lst(msi_prime)) {
     # If the graph is complete
     x$e <- new_edge(d_qic = NULL)
